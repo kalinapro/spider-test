@@ -5,14 +5,596 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Кто ты из Человека-паука?</title>
     <script src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"></script>
-    <link rel="stylesheet" href="style.css">
+    <style>
+        :root {
+            --spider-red: #e62429;
+            --spider-blue: #0055a4;
+            --dark: #1a1a2e;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        
+        .loading-screen {
+            text-align: center;
+            padding: 50px 20px;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #e0e0e0;
+            border-top: 5px solid var(--spider-red);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error-message {
+            background: #ffe5e5;
+            color: #cc0000;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        
+        .auth-btn {
+            background: #0077FF;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 15px;
+        }
+        
+        .auth-btn:hover {
+            background: #0055CC;
+            transform: translateY(-2px);
+        }
+        
+        .start-screen {
+            text-align: center;
+        }
+        
+        .spider-logo {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: bounce 2s infinite;
+        }
+        
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        h1 {
+            color: var(--dark);
+            margin-bottom: 20px;
+            font-size: 28px;
+            line-height: 1.3;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .user-greeting {
+            background: #f0f2f5;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .start-btn {
+            background: linear-gradient(135deg, var(--spider-red), #ff6b6b);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(230, 36, 41, 0.3);
+            transition: all 0.3s;
+        }
+        
+        .start-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(230, 36, 41, 0.4);
+        }
+        
+        .progress-bar {
+            background: #e0e0e0;
+            height: 8px;
+            border-radius: 4px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            background: linear-gradient(90deg, var(--spider-red), #ff6b6b);
+            height: 100%;
+            transition: width 0.3s;
+            border-radius: 4px;
+        }
+        
+        .counter {
+            text-align: center;
+            color: #999;
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+        
+        .question {
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 25px;
+            line-height: 1.4;
+        }
+        
+        .answers {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .answer-btn {
+            background: white;
+            border: 2px solid #e0e0e0;
+            padding: 15px 20px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+            text-align: left;
+        }
+        
+        .answer-btn:hover {
+            border-color: var(--spider-red);
+            background: #fff5f5;
+            transform: translateX(5px);
+        }
+        
+        .result-card {
+            text-align: center;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .character-emoji {
+            font-size: 120px;
+            margin: 20px 0;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
+        .character-name {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 10px;
+        }
+        
+        .character-title {
+            font-size: 18px;
+            color: var(--spider-red);
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+        
+        .character-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        .traits {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 25px;
+        }
+        
+        .trait-tag {
+            background: #f0f2f5;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .share-btn {
+            background: #0077FF;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        
+        .share-btn:hover {
+            background: #0055CC;
+            transform: translateY(-2px);
+        }
+        
+        .retry-btn {
+            background: white;
+            color: var(--spider-red);
+            border: 2px solid var(--spider-red);
+            padding: 13px 28px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 5px;
+            transition: all 0.3s;
+        }
+        
+        .retry-btn:hover {
+            background: var(--spider-red);
+            color: white;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <div id="app">
-            <!-- Контент загружается через JavaScript -->
+            <div class="loading-screen">
+                <div class="spinner"></div>
+                <p>Загрузка...</p>
+            </div>
         </div>
     </div>
-    <script src="script.js"></script>
+    
+    <script>
+        // Конфигурация приложения
+        const APP_ID = 54718396; // ID вашего приложения
+        const API_VERSION = '5.131';
+        
+        let vkBridge = null;
+        let currentUser = null;
+        let accessToken = null;
+        let currentQuestion = 0;
+        let scores = {};
+        
+        // Инициализация VK Bridge
+        async function initVK() {
+            try {
+                vkBridge = window.vkBridge;
+                if (!vkBridge) {
+                    throw new Error('VK Bridge не загружен. Откройте приложение через VK.');
+                }
+                
+                // Инициализируем приложение
+                await vkBridge.send('VKWebAppInit');
+                
+                // Получаем информацию о пользователе
+                currentUser = await vkBridge.send('VKWebAppGetUserInfo');
+                
+                console.log('User info:', currentUser);
+                
+                // Показываем главный экран
+                showStartScreen();
+                
+            } catch (error) {
+                console.error('Ошибка инициализации:', error);
+                showError(error.message);
+            }
+        }
+        
+        // Показать экран ошибки
+        function showError(message) {
+            const app = document.getElementById('app');
+            app.innerHTML = `
+                <div class="error-message">
+                    <h3>⚠️ Ошибка загрузки</h3>
+                    <p>${message}</p>
+                    <p style="margin-top: 10px; font-size: 14px;">
+                        Приложение работает только внутри VK.<br>
+                        Откройте его по ссылке: <strong>vk.com/app${APP_ID}</strong>
+                    </p>
+                    <button class="auth-btn" onclick="initVK()">Попробовать снова</button>
+                </div>
+            `;
+        }
+        
+        // Показать стартовый экран
+        function showStartScreen() {
+            const app = document.getElementById('app');
+            const greeting = currentUser ? 
+                `<div class="user-greeting">Привет, ${currentUser.first_name}! 👋</div>` : '';
+            
+            app.innerHTML = `
+                <div class="start-screen">
+                    <div class="spider-logo">🕷️</div>
+                    <h1>Кто ты из вселенной<br>Человека-паука?</h1>
+                    <p class="subtitle">Пройди тест и узнай своего персонажа из "Spider-Man: No Way Home"</p>
+                    ${greeting}
+                    <button class="start-btn" onclick="startTest()">🕸️ Начать тест</button>
+                </div>
+            `;
+        }
+        
+        // Вопросы теста
+        const questions = [
+            {
+                question: 'Какой твой идеальный выходной?',
+                answers: [
+                    { text: 'Помогать другим и делать добрые дела', points: { peter_parker: 3, spider_gwen: 1 } },
+                    { text: 'Творить искусство и создавать что-то новое', points: { miles_morales: 3, spider_gwen: 2 } },
+                    { text: 'Решать сложные головоломки и задачи', points: { dr_strange: 3, spider_noir: 2 } },
+                    { text: 'Веселиться с друзьями и шутить', points: { spider_ham: 3, miles_morales: 1 } }
+                ]
+            },
+            {
+                question: 'Что для тебя важнее всего?',
+                answers: [
+                    { text: 'Семья и близкие люди', points: { peter_parker: 2, miles_morales: 2, spider_gwen: 2 } },
+                    { text: 'Свобода и независимость', points: { spider_gwen: 3, spider_noir: 2 } },
+                    { text: 'Знания и мудрость', points: { dr_strange: 3, spider_noir: 2 } },
+                    { text: 'Власть и влияние', points: { green_goblin: 3, mysterio: 2 } }
+                ]
+            },
+            {
+                question: 'Как ты действуешь в опасной ситуации?',
+                answers: [
+                    { text: 'Быстро принимаю решение и действую', points: { peter_parker: 2, spider_gwen: 2, miles_morales: 2 } },
+                    { text: 'Сначала анализирую все варианты', points: { dr_strange: 3, spider_noir: 3 } },
+                    { text: 'Использую юмор, чтобы разрядить обстановку', points: { spider_ham: 3, miles_morales: 2 } },
+                    { text: 'Действую нестандартно и непредсказуемо', points: { green_goblin: 3, mysterio: 2 } }
+                ]
+            },
+            {
+                question: 'Какая суперспособность тебе ближе?',
+                answers: [
+                    { text: 'Паучье чутье и ловкость', points: { peter_parker: 3, spider_gwen: 2, miles_morales: 1 } },
+                    { text: 'Магия и управление реальностью', points: { dr_strange: 3, mysterio: 2 } },
+                    { text: 'Создание иллюзий и обман', points: { mysterio: 3, spider_noir: 1 } },
+                    { text: 'Суперсила и мощное оружие', points: { green_goblin: 3, spider_ham: 1 } }
+                ]
+            },
+            {
+                question: 'Какой твой стиль общения?',
+                answers: [
+                    { text: 'Дружелюбный и открытый', points: { peter_parker: 2, spider_ham: 3, miles_morales: 2 } },
+                    { text: 'Загадочный и таинственный', points: { spider_noir: 3, dr_strange: 2 } },
+                    { text: 'Уверенный и харизматичный', points: { mysterio: 3, green_goblin: 2 } },
+                    { text: 'Честный и прямой', points: { spider_gwen: 3, peter_parker: 1 } }
+                ]
+            },
+            {
+                question: 'Что бы ты сделал с большой силой?',
+                answers: [
+                    { text: 'Защищал слабых и боролся за справедливость', points: { peter_parker: 3, spider_gwen: 2, miles_morales: 2 } },
+                    { text: 'Использовал для достижения своих целей', points: { green_goblin: 3, mysterio: 2 } },
+                    { text: 'Изучал и совершенствовал свои способности', points: { dr_strange: 3, spider_noir: 2 } },
+                    { text: 'Веселился и развлекался', points: { spider_ham: 3, miles_morales: 1 } }
+                ]
+            },
+            {
+                question: 'Какой цвет тебе больше нравится?',
+                answers: [
+                    { text: 'Красный и синий', points: { peter_parker: 3, miles_morales: 1 } },
+                    { text: 'Черный и белый', points: { spider_noir: 3, spider_gwen: 2 } },
+                    { text: 'Зеленый и фиолетовый', points: { green_goblin: 3, mysterio: 2 } },
+                    { text: 'Яркие и неоновые цвета', points: { miles_morales: 3, spider_ham: 2 } }
+                ]
+            },
+            {
+                question: 'Какая твоя главная черта характера?',
+                answers: [
+                    { text: 'Ответственность', points: { peter_parker: 3, dr_strange: 2 } },
+                    { text: 'Креативность', points: { miles_morales: 3, spider_gwen: 2 } },
+                    { text: 'Амбициозность', points: { green_goblin: 3, mysterio: 2 } },
+                    { text: 'Оптимизм', points: { spider_ham: 3, spider_gwen: 1 } }
+                ]
+            }
+        ];
+        
+        // Персонажи
+        const characters = {
+            peter_parker: {
+                name: 'Питер Паркер',
+                title: 'Дружелюбный сосед',
+                description: 'Ты - классический Человек-паук! Ответственный, добрый и всегда готов помочь другим. Ты веришь, что "с большой силой приходит большая ответственность".',
+                traits: ['Ответственный', 'Добрый', 'Умный', 'Скромный'],
+                emoji: '🕷️'
+            },
+            miles_morales: {
+                name: 'Майлз Моралес',
+                title: 'Новое поколение',
+                description: 'Ты - Майлз Моралес! Современный герой с уникальным стилем. Ты креативен, смел и не боишься быть собой. Твой девиз: "Каждый может носить маску!"',
+                traits: ['Креативный', 'Смелый', 'Стильный', 'Вдохновляющий'],
+                emoji: '🎨'
+            },
+            spider_gwen: {
+                name: 'Гвен Стейси',
+                title: 'Паук-Гвен',
+                description: 'Ты - Гвен Стейси! Независимая, сильная и талантливая. Ты идешь своим путем и не позволяешь никому определять твою судьбу.',
+                traits: ['Независимая', 'Сильная', 'Талантливая', 'Решительная'],
+                emoji: '🩰'
+            },
+            spider_noir: {
+                name: 'Нуарный Человек-паук',
+                title: 'Детектив',
+                description: 'Ты - Нуарный Человек-паук! Загадочный, наблюдательный и умный. Ты предпочитаешь действовать в тени и всегда находишь выход из сложных ситуаций.',
+                traits: ['Загадочный', 'Умный', 'Наблюдательный', 'Хитрый'],
+                emoji: '🕵️'
+            },
+            spider_ham: {
+                name: 'Свин-паук',
+                title: 'Весельчак',
+                description: 'Ты - Свин-паук! Жизнерадостный, оптимистичный и с отличным чувством юмора. Ты умеешь поднять настроение даже в самой сложной ситуации!',
+                traits: ['Веселый', 'Оптимистичный', 'Дружелюбный', 'Креативный'],
+                emoji: '🐷'
+            },
+            dr_strange: {
+                name: 'Доктор Стрэндж',
+                title: 'Верховный маг',
+                description: 'Ты - Доктор Стрэндж! Мудрый, могущественный и немного загадочный. Ты видишь 14 миллионов вариантов развития событий и всегда выбираешь правильный.',
+                traits: ['Мудрый', 'Могущественный', 'Загадочный', 'Решительный'],
+                emoji: '🔮'
+            },
+            mysterio: {
+                name: 'Мистерио',
+                title: 'Мастер иллюзий',
+                description: 'Ты - Мистерио! Харизматичный, умный и умеешь произвести впечатление. Ты мастер создавать иллюзии и убеждать людей в своей правоте.',
+                traits: ['Харизматичный', 'Умный', 'Амбициозный', 'Артистичный'],
+                emoji: '🎭'
+            },
+            green_goblin: {
+                name: 'Зеленый Гоблин',
+                title: 'Гений и безумие',
+                description: 'Ты - Зеленый Гоблин! Гениальный, амбициозный и непредсказуемый. Ты не боишься рисковать и всегда идешь до конца в достижении своих целей.',
+                traits: ['Гениальный', 'Амбициозный', 'Непредсказуемый', 'Смелый'],
+                emoji: '🎃'
+            }
+        };
+        
+        // Начать тест
+        function startTest() {
+            currentQuestion = 0;
+            scores = {};
+            showQuestion();
+        }
+        
+        // Показать вопрос
+        function showQuestion() {
+            const question = questions[currentQuestion];
+            const app = document.getElementById('app');
+            const progress = (currentQuestion / questions.length) * 100;
+            
+            app.innerHTML = `
+                <div class="counter">Вопрос ${currentQuestion + 1} из ${questions.length}</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: ${progress}%"></div>
+                </div>
+                <div class="question">${question.question}</div>
+                <div class="answers">
+                    ${question.answers.map((answer, index) => `
+                        <button class="answer-btn" onclick="answerQuestion(${index})">
+                            ${answer.text}
+                        </button>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        // Ответить на вопрос
+        function answerQuestion(answerIndex) {
+            const question = questions[currentQuestion];
+            const answer = question.answers[answerIndex];
+            
+            for (const [character, points] of Object.entries(answer.points)) {
+                scores[character] = (scores[character] || 0) + points;
+            }
+            
+            currentQuestion++;
+            
+            if (currentQuestion < questions.length) {
+                showQuestion();
+            } else {
+                showResult();
+            }
+        }
+        
+        // Показать результат
+        function showResult() {
+            let maxScore = 0;
+            let winner = null;
+            
+            for (const [character, score] of Object.entries(scores)) {
+                if (score > maxScore) {
+                    maxScore = score;
+                    winner = character;
+                }
+            }
+            
+            const character = characters[winner];
+            const app = document.getElementById('app');
+            
+            app.innerHTML = `
+                <div class="result-card">
+                    <h2>Твой персонаж:</h2>
+                    <div class="character-emoji">${character.emoji}</div>
+                    <div class="character-name">${character.name}</div>
+                    <div class="character-title">${character.title}</div>
+                    <div class="character-description">${character.description}</div>
+                    <div class="traits">
+                        ${character.traits.map(trait => `
+                            <span class="trait-tag">${trait}</span>
+                        `).join('')}
+                    </div>
+                    <button class="share-btn" onclick="shareResult('${character.name}')">📤 Поделиться</button>
+                    <button class="retry-btn" onclick="startTest()">🔄 Пройти еще раз</button>
+                </div>
+            `;
+        }
+        
+        // Поделиться результатом
+        async function shareResult(characterName) {
+            if (vkBridge) {
+                try {
+                    await vkBridge.send('VKWebAppShowWallPostBox', {
+                        message: `🕷️ Я прошел тест "Кто ты из Человека-паука?" и я - ${characterName}! А кто ты? Пройди тест: vk.com/app${APP_ID}`
+                    });
+                } catch (error) {
+                    console.error('Ошибка публикации:', error);
+                    alert('Не удалось открыть окно публикации');
+                }
+            }
+        }
+        
+        // Запуск приложения
+        document.addEventListener('DOMContentLoaded', initVK);
+    </script>
 </body>
 </html>
