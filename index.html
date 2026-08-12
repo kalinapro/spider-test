@@ -200,10 +200,56 @@
             to { opacity: 1; transform: translateY(0); }
         }
         
-        .character-emoji {
-            font-size: 120px;
-            margin: 20px 0;
+        .character-image-container {
+            width: 300px;
+            height: 300px;
+            margin: 20px auto;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            position: relative;
+        }
+        
+        .character-image {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .fallback-image {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             animation: pulse 2s infinite;
+        }
+        
+        .fallback-emoji {
+            font-size: 120px;
+        }
+        
+        .loading-image {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #f5f5f5;
+        }
+        
+        .loading-image .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid #e0e0e0;
+            border-top: 4px solid var(--spider-red);
+        }
+        
+        .loading-image p {
+            margin-top: 15px;
+            color: #666;
+            font-size: 14px;
         }
         
         @keyframes pulse {
@@ -296,7 +342,7 @@
     
     <script>
         // Конфигурация приложения
-        const APP_ID = 54718396; // ID вашего приложения
+        const APP_ID = 54718396;
         const API_VERSION = '5.131';
         
         let vkBridge = null;
@@ -304,6 +350,7 @@
         let accessToken = null;
         let currentQuestion = 0;
         let scores = {};
+        let userAvatar = null;
         
         // Инициализация VK Bridge
         async function initVK() {
@@ -313,15 +360,17 @@
                     throw new Error('VK Bridge не загружен. Откройте приложение через VK.');
                 }
                 
-                // Инициализируем приложение
                 await vkBridge.send('VKWebAppInit');
-                
-                // Получаем информацию о пользователе
                 currentUser = await vkBridge.send('VKWebAppGetUserInfo');
                 
-                console.log('User info:', currentUser);
+                // Сохраняем аватарку пользователя
+                if (currentUser.photo_200) {
+                    userAvatar = currentUser.photo_200;
+                }
                 
-                // Показываем главный экран
+                console.log('User info:', currentUser);
+                console.log('Avatar:', userAvatar);
+                
                 showStartScreen();
                 
             } catch (error) {
@@ -439,63 +488,79 @@
             }
         ];
         
-        // Персонажи
+        // Персонажи с промптами для AI
         const characters = {
             peter_parker: {
                 name: 'Питер Паркер',
                 title: 'Дружелюбный сосед',
                 description: 'Ты - классический Человек-паук! Ответственный, добрый и всегда готов помочь другим. Ты веришь, что "с большой силой приходит большая ответственность".',
                 traits: ['Ответственный', 'Добрый', 'Умный', 'Скромный'],
-                emoji: '🕷️'
+                emoji: '🕷️',
+                prompt: 'Peter Parker Spider-Man in red and blue suit, superhero pose, comic book art style, high quality',
+                colors: ['#e62429', '#0055a4']
             },
             miles_morales: {
                 name: 'Майлз Моралес',
                 title: 'Новое поколение',
                 description: 'Ты - Майлз Моралес! Современный герой с уникальным стилем. Ты креативен, смел и не боишься быть собой. Твой девиз: "Каждый может носить маску!"',
                 traits: ['Креативный', 'Смелый', 'Стильный', 'Вдохновляющий'],
-                emoji: '🎨'
+                emoji: '🎨',
+                prompt: 'Miles Morales Spider-Man in black and red suit, street art style, dynamic pose, high quality',
+                colors: ['#ff0000', '#000000']
             },
             spider_gwen: {
                 name: 'Гвен Стейси',
                 title: 'Паук-Гвен',
                 description: 'Ты - Гвен Стейси! Независимая, сильная и талантливая. Ты идешь своим путем и не позволяешь никому определять твою судьбу.',
                 traits: ['Независимая', 'Сильная', 'Талантливая', 'Решительная'],
-                emoji: '🩰'
+                emoji: '🩰',
+                prompt: 'Spider-Gwen in white and pink suit with hood, graceful pose, comic book style, high quality',
+                colors: ['#ffffff', '#ff69b4']
             },
             spider_noir: {
                 name: 'Нуарный Человек-паук',
                 title: 'Детектив',
                 description: 'Ты - Нуарный Человек-паук! Загадочный, наблюдательный и умный. Ты предпочитаешь действовать в тени и всегда находишь выход из сложных ситуаций.',
                 traits: ['Загадочный', 'Умный', 'Наблюдательный', 'Хитрый'],
-                emoji: '🕵️'
+                emoji: '🕵️',
+                prompt: 'Spider-Man Noir in black and white detective style, 1930s atmosphere, noir comic art, high quality',
+                colors: ['#2c3e50', '#95a5a6']
             },
             spider_ham: {
                 name: 'Свин-паук',
                 title: 'Весельчак',
                 description: 'Ты - Свин-паук! Жизнерадостный, оптимистичный и с отличным чувством юмора. Ты умеешь поднять настроение даже в самой сложной ситуации!',
                 traits: ['Веселый', 'Оптимистичный', 'Дружелюбный', 'Креативный'],
-                emoji: '🐷'
+                emoji: '🐷',
+                prompt: 'Spider-Ham cartoon pig in spider costume, funny cartoon style, colorful, high quality',
+                colors: ['#f39c12', '#e74c3c']
             },
             dr_strange: {
                 name: 'Доктор Стрэндж',
                 title: 'Верховный маг',
                 description: 'Ты - Доктор Стрэндж! Мудрый, могущественный и немного загадочный. Ты видишь 14 миллионов вариантов развития событий и всегда выбираешь правильный.',
                 traits: ['Мудрый', 'Могущественный', 'Загадочный', 'Решительный'],
-                emoji: '🔮'
+                emoji: '🔮',
+                prompt: 'Doctor Strange with magic portals and mystical symbols, sorcerer supreme, high quality',
+                colors: ['#9b59b6', '#2c3e50']
             },
             mysterio: {
                 name: 'Мистерио',
                 title: 'Мастер иллюзий',
                 description: 'Ты - Мистерио! Харизматичный, умный и умеешь произвести впечатление. Ты мастер создавать иллюзии и убеждать людей в своей правоте.',
                 traits: ['Харизматичный', 'Умный', 'Амбициозный', 'Артистичный'],
-                emoji: '🎭'
+                emoji: '🎭',
+                prompt: 'Mysterio in green and gold armor with cape, illusion magic, dramatic pose, high quality',
+                colors: ['#2ecc71', '#f1c40f']
             },
             green_goblin: {
                 name: 'Зеленый Гоблин',
                 title: 'Гений и безумие',
                 description: 'Ты - Зеленый Гоблин! Гениальный, амбициозный и непредсказуемый. Ты не боишься рисковать и всегда идешь до конца в достижении своих целей.',
                 traits: ['Гениальный', 'Амбициозный', 'Непредсказуемый', 'Смелый'],
-                emoji: '🎃'
+                emoji: '🎃',
+                prompt: 'Green Goblin in green and purple suit on glider, menacing pose, high quality',
+                colors: ['#27ae60', '#8e44ad']
             }
         };
         
@@ -564,7 +629,12 @@
             app.innerHTML = `
                 <div class="result-card">
                     <h2>Твой персонаж:</h2>
-                    <div class="character-emoji">${character.emoji}</div>
+                    <div class="character-image-container" id="image-container">
+                        <div class="loading-image">
+                            <div class="spinner"></div>
+                            <p>Генерируем изображение...</p>
+                        </div>
+                    </div>
                     <div class="character-name">${character.name}</div>
                     <div class="character-title">${character.title}</div>
                     <div class="character-description">${character.description}</div>
@@ -577,6 +647,60 @@
                     <button class="retry-btn" onclick="startTest()">🔄 Пройти еще раз</button>
                 </div>
             `;
+            
+            // Генерируем изображение
+            generateCharacterImage(character);
+        }
+        
+        // Генерация изображения через Pollinations.ai
+        function generateCharacterImage(character) {
+            const imageContainer = document.getElementById('image-container');
+            
+            try {
+                // Формируем промпт
+                let prompt = character.prompt;
+                
+                // Добавляем информацию о пользователе в промпт
+                if (userAvatar) {
+                    // Проверяем, является ли аватарка стандартной заглушкой VK
+                    // Стандартные заглушки обычно не содержат лица
+                    const isDefaultAvatar = userAvatar.includes('camera') || 
+                                           userAvatar.includes('default') ||
+                                           userAvatar.includes('deactivated');
+                    
+                    if (!isDefaultAvatar) {
+                        prompt += ', person face from user avatar, portrait style';
+                    }
+                }
+                
+                // Создаем URL для генерации
+                const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&nologo=true&seed=${Math.floor(Math.random() * 1000000)}`;
+                
+                // Показываем сгенерированное изображение
+                imageContainer.innerHTML = `
+                    <img src="${imageUrl}" 
+                         alt="${character.name}" 
+                         class="character-image"
+                         onload="console.log('Image loaded successfully')"
+                         onerror="showFallbackImage('${character.emoji}', '${character.colors[0]}', '${character.colors[1]}')">
+                `;
+                
+            } catch (error) {
+                console.error('Ошибка генерации:', error);
+                showFallbackImage(character.emoji, character.colors[0], character.colors[1]);
+            }
+        }
+        
+        // Показать запасное изображение (эмодзи)
+        function showFallbackImage(emoji, color1, color2) {
+            const imageContainer = document.getElementById('image-container');
+            if (imageContainer) {
+                imageContainer.innerHTML = `
+                    <div class="fallback-image" style="background: linear-gradient(135deg, ${color1}, ${color2})">
+                        <span class="fallback-emoji">${emoji}</span>
+                    </div>
+                `;
+            }
         }
         
         // Поделиться результатом
