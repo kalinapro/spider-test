@@ -1,3 +1,17 @@
+function generateWithPollinations(characterName, userAvatarUrl) {
+    // Формируем промпт
+    const prompt = `${characterName} spiderman character, person's face`;
+    
+    // Создаем URL для генерации
+    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512`;
+    
+    // Если есть аватарка, добавляем как reference
+    if (userAvatarUrl) {
+        return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?width=512&height=512&image=${encodeURIComponent(userAvatarUrl)}`;
+    }
+    
+    return imageUrl;
+}
 // Конфигурация
 const config = {
     useAI: true, // Включить AI-генерацию
